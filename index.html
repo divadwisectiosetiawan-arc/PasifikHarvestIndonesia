@@ -1,773 +1,765 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PASIFIK HARVEST INDONESIA - IoT Dashboard</title>
+    <title>PASIFIK HARVEST INDONESIA</title>
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
+        /* --- 1. CSS (DESKTOP) --- */
         :root {
-            --bg-dash: #0f172a;
-            --card-dash: #1e293b;
-            --border: #334155;
-            --text-highlight: #ffffff; 
-            --text-label: #94a3b8;
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-header: rgba(15, 23, 42, 0.9);
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
             --primary: #38bdf8;
-            --success: #4ade80;
-            --danger: #f87171;
-            --warning: #facc15;
-            --purple: #c084fc;
-            --wa-header: #1e293b; 
-            --wa-tab: #0f172a;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            margin: 0; font-family: 'Inter', sans-serif;
-            background: var(--bg-dash); color: var(--text-highlight);
-            overflow-x: hidden; padding-bottom: 50px;
-        }
-
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-
-        /* --- LOGIN --- */
-        #loginPage {
-            height: 100vh; display: flex; justify-content: center; align-items: center;
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999;
-            background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%); padding: 20px;
-        }
-        .login-card {
-            background: #ffffff; padding: 30px; width: 100%; max-width: 400px;
-            border-radius: 8px; text-align: center; color: #0f172a;
-        }
-        .login-logo { max-width: 120px; height: auto; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto; }
-        .login-input {
-            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1; 
-            border-radius: 4px; background: #f8fafc; color: #334155; font-size: 1rem; outline: none;
-        }
-        .login-btn {
-            width: 100%; padding: 12px; background: #0f172a; color: white; border: none; border-radius: 4px;
-            font-weight: 700; cursor: pointer; transition: 0.2s;
-        }
-
-        /* =========================================
-           DESKTOP HEADER
-           ========================================= */
-        header {
-            background: var(--card-dash); 
-            padding: 15px 25px; 
-            border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 100;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .brand-section { display: flex; align-items: center; gap: 15px; cursor: default; }
-        .header-logo { height: 42px; width: auto; background: white; padding: 2px; border-radius: 50%; }
-        .brand-text h2 { margin: 0; font-size: 1.1rem; color: var(--text-highlight); font-weight: 700; letter-spacing: 1px; }
-        .brand-text span { font-size: 0.7rem; color: var(--text-label); display: block; }
-        
-        .nav-menu { display: flex; gap: 10px; align-items: center; }
-        #clock { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--warning); margin-right: 15px; }
-        
-        nav button, nav select {
-            padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border);
-            background: #0f172a; color: var(--text-highlight); font-size: 0.85rem; font-weight: 600;
-            cursor: pointer; white-space: nowrap; font-family: 'Inter', sans-serif;
-        }
-        nav button:hover { background: #334155; }
-        .btn-save { background: #15803d !important; border-color: #15803d !important; }
-        .btn-reset { background: #b91c1c !important; border-color: #b91c1c !important; }
-
-        .mobile-header-right, .bottom-nav, .mobile-menu-dropdown { display: none; }
-
-        /* --- DASHBOARD CONTENT --- */
-        .container { padding: 30px; max-width: 1600px; margin: 0 auto; }
-        #section-totals, #section-lines, #section-chart { display: block; } 
-
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-bottom: 35px; }
-        .card { background: var(--card-dash); padding: 20px; border-radius: 6px; border: 1px solid var(--border); transition: 0.2s; display: flex; flex-direction: column; justify-content: center; }
-        .card:hover { border-color: var(--text-label); background: #263346; }
-        
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        .card-title { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-highlight); font-size: 1.1rem; }
-        .card-speed { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text-label); }
-        
-        .badge { font-size: 0.65rem; padding: 4px 8px; border-radius: 4px; font-weight: 800; display: inline-block; margin-top: 5px; letter-spacing: 0.5px; }
-        .badge-club { background: rgba(56, 189, 248, 0.15); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.3); }
-        .badge-pouch { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
-
-        .mini-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .mini-table th { text-align: left; color: var(--text-label); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; padding-bottom: 8px; }
-        .mini-table td { font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; font-weight: 700; padding-top: 5px; color: #ffffff; }
-        
-        .grand-card { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 25px; border-radius: 6px; border: 2px solid var(--warning); text-align: center; }
-        .grand-label { font-size: 0.8rem; color: var(--warning); letter-spacing: 2px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; }
-        .grand-val { font-family: 'JetBrains Mono', monospace; font-size: 3.8rem; font-weight: 800; color: white; line-height: 1; }
-        
-        .reset-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 20px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #334155; display: inline-flex; }
-        .time-group { display: flex; align-items: center; gap: 5px; }
-        .time-btn { background: #334155; color: white; border: none; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; }
-        .time-display { background: #000; color: var(--primary); font-family: 'JetBrains Mono', monospace; padding: 5px; border-radius: 4px; border: 1px solid #475569; font-size: 1.1rem; width: 50px; text-align: center; }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
-
-        .chart-container { background: var(--card-dash); padding: 25px; border-radius: 6px; border: 1px solid var(--border); margin-top: 20px; }
-        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .chart-filters button { background: transparent; border: 1px solid var(--border); color: var(--text-label); padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-left: 5px; cursor: pointer; }
-        .chart-filters button.active { background: var(--primary); color: #0f172a; border-color: var(--primary); }
-        .canvas-wrapper { position: relative; height: 350px; width: 100%; }
-        
-        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { white-space: nowrap; }
-
-        /* =========================================
-           MOBILE STYLE FIX
-           ========================================= */
-        @media (max-width: 768px) {
-            header {
-                position: fixed; top: 0; left: 0; width: 100%;
-                background: var(--wa-header); border-bottom: 1px solid #334155;
-                padding: 10px 15px; justify-content: space-between; height: 60px; z-index: 1000;
-            }
-            .nav-menu { display: none; } 
+            --primary-bg: rgba(56, 189, 248, 0.1);
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #a855f7;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
             
-            .brand-section { width: auto; justify-content: flex-start; }
-            .header-logo { height: 35px; margin-right: 10px; }
-            .brand-text h2 { font-size: 1rem; }
-            .brand-text span { display: block; font-size: 0.65rem; text-align: left; }
+            /* Mobile Variables */
+            --nav-height: 60px;
+            --whatsapp-header: #1f2c34;
+            --whatsapp-bg: #111b21;
+        }
 
-            .mobile-header-right { display: flex; align-items: center; gap: 10px; }
-            .mobile-clock { color: var(--warning); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 700; }
-            .mobile-kebab-menu { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; color: white; font-size: 1.5rem; cursor: pointer; }
+        [data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-header: rgba(255, 255, 255, 0.9);
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --primary-bg: rgba(2, 132, 199, 0.1);
+            --success: #51b1ff;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --purple: #7c3aed;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             
-            .mobile-menu-dropdown {
-                display: none; position: fixed; top: 55px; right: 10px;
-                background: #1e293b; border: 1px solid #334155;
-                border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-                flex-direction: column; width: 180px; z-index: 1001;
-            }
-            .mobile-menu-dropdown.active { display: flex; }
-            .mobile-menu-dropdown button, .mobile-menu-dropdown select {
-                background: transparent; border: none; border-bottom: 1px solid #334155;
-                color: white; padding: 12px 15px; text-align: left; font-size: 0.85rem; 
-                width: 100%; border-radius: 0; text-transform: uppercase; font-weight: 600;
-            }
-            .mobile-menu-dropdown select { background: #0f172a; margin: 0; text-transform: none; }
+            /* Mobile Light */
+            --whatsapp-header: #0284c7;
+            --whatsapp-bg: #f0f2f5;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); transition: background-color 0.3s, color 0.3s; -webkit-font-smoothing: antialiased; }
+
+        button { cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+        button:active { transform: scale(0.98); }
+
+        /* Login */
+        #loginPage { height: 100vh; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle at center, var(--bg-card), var(--bg-body)); }
+        .login-box { background: var(--bg-card); padding: 40px; width: 100%; max-width: 400px; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); text-align: center; }
+        .login-logo { height: 80px; width: auto; margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--primary-bg)); }
+        .login-box h2 { color: var(--primary); margin: 0 0 20px 0; font-size: 24px; }
+        .login-box input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-main); outline: none; }
+        .login-box input:focus { border-color: var(--primary); }
+        .login-box button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; }
+
+        /* Dashboard & Header (DESKTOP DEFAULT) */
+        #dashboardPage { display: none; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* HEADER ASLI (Akan disembunyikan di Mobile) */
+        header.desktop-header { background: var(--bg-header); backdrop-filter: blur(10px); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border-color); box-shadow: var(--shadow); }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-logo { height: 40px; width: auto; }
+        .header-title { font-size: 20px; font-weight: 700; color: var(--primary); letter-spacing: -0.5px; }
+        nav { display: flex; align-items: center; gap: 12px; }
+        nav select, nav button { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 13px; font-weight: 500; }
+        nav button:hover { background: var(--bg-body); border-color: var(--primary); }
+        .btn-theme { padding: 8px !important; display: flex; align-items: center; justify-content: center; }
+
+        .container { padding: 30px; max-width: 1400px; margin: auto; }
+
+        /* Components */
+        .total-box { background: linear-gradient(135deg, var(--bg-card), var(--bg-body)); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 40px; border: 1px solid var(--border-color); box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        .total-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--purple)); }
+        .total-box .label { color: var(--text-muted); font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+        .total-box h1 { margin: 10px 0 0; font-size: 56px; color: var(--primary); font-weight: 800; letter-spacing: -2px; }
+
+        .section-header { display: flex; align-items: center; gap: 12px; margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        .section-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
+        .badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; color: white; font-weight: 600; }
+        .bg-primary { background: var(--primary); } .bg-warning { background: var(--warning); } .bg-purple { background: var(--purple); }
+
+        .layout-row { display: flex; gap: 25px; align-items: flex-start; }
+        
+        .summary-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 25px; border-radius: 16px; min-width: 280px; width: 280px; flex-shrink: 0; box-shadow: var(--shadow); }
+        .summary-header { font-size: 16px; font-weight: 700; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        .summary-row { margin-bottom: 15px; }
+        .summary-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        .summary-value { font-size: 24px; font-weight: 700; }
+
+        .grid { flex-grow: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+
+        .card { background: var(--bg-card); padding: 20px; border-radius: 16px; border: 1px solid var(--border-color); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; position: relative; overflow: hidden; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: var(--primary); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .card-title { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-muted); }
+        .rate-badge { font-size: 10px; background: var(--bg-body); padding: 3px 8px; border-radius: 6px; color: var(--text-muted); border: 1px solid var(--border-color); }
+        .card table { width: 100%; border-collapse: collapse; }
+        .card th { font-size: 11px; text-align: center; color: var(--text-muted); font-weight: 600; padding-bottom: 5px; }
+        .card td { font-size: 20px; font-weight: 700; text-align: center; color: var(--text-main); }
+        .val-actual { color: var(--success); }
+
+        .chart-container { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; flex-grow: 1; min-height: 420px; box-shadow: var(--shadow); }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .chart-controls button { background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 16px; border-radius: 20px; font-size: 12px; margin-left: 5px; }
+        .chart-controls button.active { background: var(--purple); color: white; border-color: var(--purple); }
+
+        .table-responsive { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-color); }
+        table.full-table { width: 100%; border-collapse: collapse; background: var(--bg-card); min-width: 900px; }
+        .full-table th { background: var(--bg-body); color: var(--primary); position: sticky; top: 0; z-index: 10; padding: 12px; font-size: 13px; text-align: center; border-bottom: 1px solid var(--border-color); }
+        .full-table td { padding: 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 13px; text-align: center; color: var(--text-main); }
+        .val-zero { color: var(--text-muted); opacity: 0.5; }
+
+        footer { text-align: center; padding: 30px; color: var(--text-muted); font-size: 12px; }
+
+        /* --- 2. MOBILE CSS (WHATSAPP STYLE) --- */
+        .mobile-header, .bottom-nav, .mobile-kebab-menu, .mobile-overlay { display: none; }
+        
+        @media (max-width: 900px) {
+            body { background-color: var(--whatsapp-bg); padding-bottom: 70px; } 
+            .container { padding: 10px; margin-top: 55px; }
             
+            .desktop-header { display: none !important; }
+            .header-title { display: block; font-size: 16px; } 
+
+            .mobile-header {
+                display: flex; position: fixed; top: 0; left: 0; right: 0; height: 56px;
+                background: var(--whatsapp-header); color: white;
+                align-items: center; justify-content: space-between; padding: 0 16px;
+                z-index: 1000; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            .mobile-title { font-weight: 600; font-size: 20px; }
+            .mobile-actions button { background: none; border: none; color: white; font-size: 20px; padding: 8px; }
+
+            .mobile-kebab-menu {
+                display: none; flex-direction: column; position: fixed; top: 5px; right: 5px;
+                background: var(--bg-card); width: 200px; border-radius: 4px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 2000;
+                transform-origin: top right; animation: scaleIn 0.2s ease;
+            }
+            .mobile-kebab-menu.show { display: flex; }
+            .kebab-item { padding: 14px 16px; color: var(--text-main); font-size: 14px; text-align: left; background: none; border: none; }
+            .kebab-item:hover { background: var(--bg-body); }
+            
+            .mobile-overlay { display: none; position: fixed; inset: 0; z-index: 1500; }
+            .mobile-overlay.show { display: block; }
+
             .bottom-nav {
-                display: flex; position: fixed; bottom: 0; left: 0; width: 100%;
-                height: 65px; background: var(--wa-tab); border-top: 1px solid #334155;
+                display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 65px;
+                background: var(--bg-card); border-top: 1px solid var(--border-color);
                 z-index: 1000; justify-content: space-around; align-items: center;
             }
             .nav-item {
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                color: #94a3b8; font-size: 0.7rem; font-weight: 600; gap: 4px; width: 33%; height: 100%;
-                cursor: pointer; transition: 0.2s;
+                flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                background: none; border: none; color: var(--text-muted); gap: 4px;
             }
-            .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); background: rgba(56, 189, 248, 0.05); }
-            .nav-icon { width: 24px; height: 24px; fill: currentColor; }
+            .nav-item.active { color: var(--success); }
+            .nav-item.active .nav-indicator { width: 100%; height: 3px; background: var(--success); position: absolute; top: 0; }
+            .nav-icon { font-size: 20px; }
+            .nav-label { font-size: 12px; font-weight: 500; }
 
-            body { padding-top: 70px; padding-bottom: 80px; }
-            .container { padding: 10px; }
+            [data-mobile-tab="dashboard"] .m-hide-dashboard { display: none !important; }
+            [data-mobile-tab="total"] .m-hide-total { display: none !important; }
+            [data-mobile-tab="grafik"] .m-hide-grafik { display: none !important; }
             
-            #section-totals, #section-lines, #section-chart { display: none; animation: fadeIn 0.3s; }
-            #section-lines { display: block; } 
-
-            .summary-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: 0; }
-            .grid { grid-template-columns: 1fr; gap: 10px; }
-            
-            /* --- KARTU TOTAL UI MOBILE FIX --- */
-            .card, .grand-card { 
-                padding: 15px; min-height: 120px; margin-bottom: 0;
-                background: var(--card-dash); border: 1px solid var(--border);
-            }
-            /* Override lebar kolom tabel KHUSUS untuk kartu Total di Mobile */
-            /* Kita beri ruang lebih besar (50%) untuk kolom pertama (Actual) karena angkanya jutaan */
-            .summary-grid .mini-table colgroup col:nth-child(1) { width: 50% !important; }
-            .summary-grid .mini-table colgroup col:nth-child(2) { width: 25% !important; }
-            .summary-grid .mini-table colgroup col:nth-child(3) { width: 25% !important; }
-            .summary-grid .mini-table { table-layout: auto; }
-            
-            .mini-table td { font-size: 1.4rem; padding-top: 2px; }
-            .mini-table th { font-size: 0.7rem; }
-            
-            .grand-val { font-size: 1.4rem; margin: 0; margin-top: 5px; color: white; }
-            .grand-label { font-size: 1.1rem; color: var(--text-highlight); font-family: 'JetBrains Mono', monospace; font-weight:700; margin-bottom:0; text-transform: none; letter-spacing: 0; }
-            
-            .reset-control { width: 100%; justify-content: center; padding: 5px; margin-top: 10px; font-size: 0.7rem; }
-
-            .table-responsive table { width: 100%; table-layout: fixed; white-space: normal; }
-            .table-responsive th { font-size: 0.75rem; vertical-align: middle; }
-            .table-responsive td { font-size: 0.85rem; padding: 8px 5px; vertical-align: middle; word-wrap: break-word; }
-            .table-responsive th:nth-child(1), .table-responsive td:nth-child(1) { width: 30%; }
-            .table-responsive th:nth-child(2), .table-responsive td:nth-child(2) { width: 25%; text-align: center; }
-            .table-responsive th:nth-child(3), .table-responsive td:nth-child(3) { width: 45%; }
-
-            .chart-filters { display: flex; justify-content: space-between; gap: 5px; }
-            .chart-filters button { flex: 1; margin: 0; padding: 6px 0; font-size: 0.7rem; text-align: center; }
+            .layout-row { flex-direction: column; gap: 15px; }
+            .summary-card { width: 100%; min-width: 0; margin-bottom: 10px; }
+            .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .card { padding: 12px; }
+            .card td { font-size: 16px; }
+            .total-box h1 { font-size: 40px; }
+            .chart-container { min-height: 300px; padding: 10px; }
+            .section-header { margin-top: 15px; margin-bottom: 15px; }
+            .chart-legend-custom { display: none; }
         }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 
 <body>
 
-    <div id="loginPage">
-        <div class="login-card">
-            <img src="phi.png" alt="Pasific Harvest" class="login-logo" onerror="this.style.display='none'">
-            <h1 class="login-title">SYSTEM LOGIN</h1>
-            <p style="color:#64748b; margin-bottom:20px;">Production Monitoring</p>
-            <input id="username" class="login-input" type="text" placeholder="Username" autocomplete="off" autofocus>
-            <input id="password" class="login-input" type="password" placeholder="Password">
-            <button id="btnLogin" class="login-btn" onclick="doLogin()">ACCESS DASHBOARD</button>
-            <p id="error" style="color:#ef4444; margin-top:15px; font-weight:600;"></p>
+<div id="loginPage">
+    <div class="login-box">
+        <img src="phi.png" alt="Logo" class="login-logo">
+        <h2>USER LOGIN</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">Production Monitoring System</p>
+        <input id="username" placeholder="Username" type="text" autocomplete="off">
+        <input id="password" type="password" placeholder="Password">
+        <button onclick="doLogin()">LOGIN</button>
+        <p id="error" style="margin-top:15px; font-size:13px;"></p>
+    </div>
+</div>
+
+<div id="dashboardPage">
+    <header class="desktop-header">
+        <div class="header-left">
+            <img src="phi.png" alt="Logo" class="header-logo">
+            <span class="header-title">COUNTER PRODUCTION PHI</span>
+        </div>
+        <nav>
+            <span id="clock" style="font-family: monospace; font-weight:600; color:var(--text-main)"></span>
+            <select id="machineSelect">
+                <option value="machine01|L1">Machine 01</option>
+                <option value="machine02|L2">Machine 02</option>
+                <option value="machine03|L3">Machine 03</option>
+                <option value="machine04|L4">Machine 04</option>
+                <option value="machine05|L5">Machine 05</option>
+                <option value="machine06|L6">Machine 06</option>
+            </select>
+            <button onclick="showDashboard()" title="Dashboard">Dashboard</button>
+            <button onclick="showHistory()" title="History">History</button>
+            <button onclick="manualSave()" style="color:var(--success); border-color:var(--success)">Save</button>
+            <button onclick="resetCounter()" style="color:var(--danger); border-color:var(--danger)">Reset</button>
+            <button onclick="toggleTheme()" class="btn-theme" title="Switch Theme">◑</button>
+            <button onclick="logout()">Logout</button>
+        </nav>
+    </header>
+
+    <div class="mobile-header">
+        <span class="mobile-title">SARDINES PRODUCTION PHI</span>
+        <div class="mobile-actions">
+            <button onclick="toggleKebabMenu()">&#8942;</button>
         </div>
     </div>
 
-    <div id="dashboardPage" style="display:none;">
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleKebabMenu()"></div>
+    <div class="mobile-kebab-menu" id="kebabMenu">
+        <button class="kebab-item" onclick="manualSave(); toggleKebabMenu()">Simpan & Reset (Akhir Shift)</button>
+        <button class="kebab-item" onclick="resetCounter(); toggleKebabMenu()">Reset Counter</button>
+        <button class="kebab-item" onclick="showHistory(); toggleKebabMenu()">Riwayat Data</button>
+        <button class="kebab-item" onclick="toggleTheme(); toggleKebabMenu()">Ganti Tema</button>
+        <button class="kebab-item" onclick="logout()">Keluar</button>
+    </div>
+
+    <div class="container" id="dashboardView" data-mobile-tab="dashboard">
         
-        <header id="mainHeader">
-            <div class="brand-section">
-                <img src="phi.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
-                <div class="brand-text">
-                    <h2>PASIFIK HARVEST INDONESIA</h2>
-                    <span>INTEGRATED IOT SYSTEM</span>
-                </div>
-            </div>
-
-            <div class="nav-menu">
-                <div id="clock">--:--:--</div>
-                <nav>
-                    <button onclick="switchView('dashboard')" style="border-color:var(--text-highlight);">Dashboard</button>
-                    <button onclick="switchView('history')">History</button>
-                    <select id="machineSelectDesktop" onchange="syncSelect(this.value)">
-                        <option value="" disabled selected>-- SELECT MACHINE --</option>
-                        <option value="all">⚠ RESET ALL</option>
-                        <option value="machine01">MACHINE 01</option>
-                        <option value="machine02">MACHINE 02</option>
-                        <option value="machine03">MACHINE 03</option>
-                        <option value="machine04">MACHINE 04</option>
-                        <option value="machine05">MACHINE 05</option>
-                        <option value="machine06">MACHINE 06</option>
-                        <option value="machine07">MACHINE 07</option>
-                    </select>
-                    <button class="btn-save" onclick="manualSave()">SAVE DATA</button>
-                    <button class="btn-reset" onclick="resetCounter()">RESET</button>
-                    <button onclick="logout()" style="border-color:#ef4444; color:#ef4444;">LOGOUT</button>
-                </nav>
-            </div>
-
-            <div class="mobile-header-right">
-                <div id="mobileClock" class="mobile-clock">--:--:--</div>
-                <div class="mobile-kebab-menu" onclick="toggleMobileDropdown()">
-                    <span>&#8942;</span>
-                </div>
-            </div>
-        </header>
-
-        <div class="mobile-menu-dropdown" id="mobileDropdown">
-            <button onclick="switchView('dashboard'); toggleMobileDropdown();">Dashboard View</button>
-            <button onclick="switchView('history'); toggleMobileDropdown();">History Logs</button>
-            <select id="machineSelectMobile" onchange="syncSelect(this.value)">
-                <option value="" disabled selected>-- PILIH MESIN --</option>
-                <option value="all">⚠ RESET ALL MACHINES</option>
-                <option value="machine01">MACHINE 01</option>
-                <option value="machine02">MACHINE 02</option>
-                <option value="machine03">MACHINE 03</option>
-                <option value="machine04">MACHINE 04</option>
-                <option value="machine05">MACHINE 05</option>
-                <option value="machine06">MACHINE 06</option>
-                <option value="machine07">MACHINE 07</option>
-            </select>
-            <button class="btn-save" onclick="manualSave(); toggleMobileDropdown();" style="color:#4ade80;">SAVE DATA</button>
-            <button class="btn-reset" onclick="resetCounter(); toggleMobileDropdown();" style="color:#f87171;">RESET COUNTER</button>
-            <button onclick="logout()" style="color:#ef4444; font-weight:bold;">LOGOUT</button>
+        <div class="total-box m-hide-dashboard m-hide-grafik">
+            <div class="label">Total Production Today</div>
+            <h1 id="total">0</h1>
         </div>
 
-        <div class="container" id="viewDashboard">
+        <div class="section-header m-hide-total m-hide-grafik">
+            <span class="badge bg-primary">CLUB CAN</span>
+            <span class="section-title">LINE 1-4 & 7-15</span>
+        </div>
+        
+        <div class="layout-row">
+            <div class="summary-card m-hide-dashboard m-hide-grafik" style="border-left: 4px solid var(--primary);">
+                <div class="summary-header" style="color: var(--primary)">OVERALL CLUB CAN</div>
+                <div class="summary-row">
+                    <div class="summary-label">Total Actual</div>
+                    <div class="summary-value" id="totalClubActual" style="color: var(--text-main)">0</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">Total Teorythical</div>
+                    <div class="summary-value" id="totalClubTeorythical" style="color: var(--primary)">0</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">Avg Efficiency</div>
+                    <div class="summary-value" id="totalClubEff">0%</div>
+                </div>
+            </div>
+            <div class="grid m-hide-total m-hide-grafik" id="clubCanContainer"></div>
+        </div>
+
+        <div class="section-header m-hide-total m-hide-grafik">
+            <span class="badge bg-warning">ROUND CAN</span>
+            <span class="section-title">LINE 5-6</span>
+        </div>
+
+        <div class="layout-row">
+            <div class="summary-card m-hide-dashboard m-hide-grafik" style="border-left: 4px solid var(--warning);">
+                <div class="summary-header" style="color: var(--warning)">OVERALL ROUND CAN</div>
+                <div class="summary-row">
+                    <div class="summary-label">Total Actual</div>
+                    <div class="summary-value" id="totalRoundActual" style="color: var(--text-main)">0</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">Total Teorythical</div>
+                    <div class="summary-value" id="totalRoundTeorythical" style="color: var(--warning)">0</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">Avg Efficiency</div>
+                    <div class="summary-value" id="totalRoundEff">0%</div>
+                </div>
+            </div>
+            <div class="grid m-hide-total m-hide-grafik" id="roundCanContainer"></div>
+        </div>
+
+        <div class="section-header m-hide-dashboard m-hide-total" style="margin-top: 50px;">
+            <span class="badge bg-purple">ANALYTICS</span>
+            <span class="section-title">OVERALL PERFORMANCE</span>
+        </div>
+        
+        <div class="layout-row">
+            <div class="summary-card m-hide-dashboard m-hide-grafik" style="border-left: 4px solid var(--purple);">
+                <div class="summary-header" style="color: var(--purple)">OVERALL PERFORMANCE</div>
+                <div class="summary-row">
+                    <div class="summary-label">Overall Actual</div>
+                    <div class="summary-value" id="grandTotalActual" style="color: var(--purple)">0</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">Overall Teorythical</div>
+                    <div class="summary-value" id="grandTotalTeorythical" style="color: var(--text-main)">0</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-label">Overall Efficiency</div>
+                    <div class="summary-value" id="grandTotalEff">0%</div>
+                </div>
+            </div>
             
-            <div id="section-totals">
-                <div class="summary-grid">
-                    <div class="card" style="border-top: 4px solid var(--primary);">
-                        <div class="card-header">
-                            <div><span class="card-title" style="color:var(--primary)">TOTAL CLUBCAN</span><span class="badge badge-club">LINES 01-04, 07-14</span></div>
-                        </div>
-                        <table class="mini-table">
-                            <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-                            <tr><th>Actual</th><th style="text-align:center">THEORITICAL</th><th style="text-align:right">Eff %</th></tr>
-                            <tr><td class="data-val" id="clubActual">0</td><td class="data-val" style="text-align:center" id="clubPredict">0</td><td class="data-val" style="text-align:right" id="clubEff">0%</td></tr>
-                        </table>
+            <div class="chart-container m-hide-dashboard m-hide-total">
+                <div class="chart-header">
+                    <div class="chart-legend-custom">
+                        <div class="legend-item"><span class="dot" style="background:var(--success)"></span> GRAFIK</div>
+                        <div class="legend-item"><span class="dot" style="background:var(--danger)"></span> TOTAL PRODUCTION</div>
+                        <div class="legend-item"><span class="dot" style="background:var(--warning); height: 3px; border-radius:0"></span> PASIFIK HARVEST INDONESIA</div>
                     </div>
-
-                    <div class="card" style="border-top: 4px solid var(--purple);">
-                        <div class="card-header">
-                            <div><span class="card-title" style="color:var(--purple)">TOTAL ROUNDCAN</span><span class="badge badge-pouch">LINE 05 & 06</span></div>
-                        </div>
-                        <table class="mini-table">
-                            <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-                            <tr><th>Actual</th><th style="text-align:center">THEORITICAL</th><th style="text-align:right">Eff %</th></tr>
-                            <tr><td class="data-val" id="pouchActual">0</td><td class="data-val" style="text-align:center" id="pouchPredict">0</td><td class="data-val" style="text-align:right" id="pouchEff">0%</td></tr>
-                        </table>
-                    </div>
-
-                    <div class="grand-card">
-                        <div class="card-header">
-                            <div><span class="grand-label">GRAND TOTAL</span><span class="badge" style="background:rgba(250,204,21,0.2); color:#facc15; border:1px solid rgba(250,204,21,0.4);">PRODUCTION</span></div>
-                        </div>
-                        <table class="mini-table">
-                             <tr><td colspan="3" class="grand-val" id="grandTotal" style="text-align:left;">0</td></tr>
-                        </table>
-                        <div class="reset-control">
-                            <span style="font-weight:bold; color:#94a3b8; text-transform:uppercase;">Auto Reset:</span>
-                            <div class="time-group">
-                                <button class="time-btn" onclick="adjustTime('setHour', -1, 23)">-</button>
-                                <input id="setHour" class="time-display" value="16" readonly>
-                                <button class="time-btn" onclick="adjustTime('setHour', 1, 23)">+</button>
-                            </div>
-                            <span style="font-weight:bold; color:#94a3b8;">:</span>
-                            <div class="time-group">
-                                <button class="time-btn" onclick="adjustTime('setMin', -1, 59)">-</button>
-                                <input id="setMin" class="time-display" value="30" readonly>
-                                <button class="time-btn" onclick="adjustTime('setMin', 1, 59)">+</button>
-                            </div>
-                        </div>
+                    <div class="chart-controls">
+                        <button class="btn-chart active" onclick="updateChartPeriod('daily', this)">Hari</button>
+                        <button class="btn-chart" onclick="updateChartPeriod('weekly', this)">Minggu</button>
+                        <button class="btn-chart" onclick="updateChartPeriod('monthly', this)">Bulan</button>
                     </div>
                 </div>
-            </div>
-
-            <div id="section-lines">
-                <div class="grid" id="cardsContainer"></div>
-            </div>
-
-            <div id="section-chart">
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h3 style="margin:0; font-family:'JetBrains Mono'">PRODUCTION TREND</h3>
-                        <div class="chart-filters">
-                            <button class="active" onclick="setChartPeriod('daily', this)">LIVE</button>
-                            <button onclick="setChartPeriod('weekly', this)">WEEKLY</button>
-                            <button onclick="setChartPeriod('monthly', this)">MONTHLY</button>
-                        </div>
-                    </div>
-                    <div class="canvas-wrapper">
-                        <canvas id="productionChart"></canvas>
-                    </div>
+                <div style="height: 320px; width: 100%;">
+                    <canvas id="productionChart"></canvas>
                 </div>
-            </div>
-        </div>
-
-        <div class="container" id="viewHistory" style="display:none">
-            <h2 style="font-family:'JetBrains Mono'; font-size:1.5rem;">HISTORY LOGS</h2>
-            <div class="table-responsive">
-                <table style="width:100%; border-collapse:collapse; color:#cbd5e1;">
-                    <thead>
-                        <tr style="border-bottom:1px solid #334155;">
-                            <th style="padding:15px; text-align:left;">TIMESTAMP</th>
-                            <th style="padding:15px; text-align:center;">TOTAL</th>
-                            <th style="padding:15px; text-align:left;">DETAILS</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody"></tbody>
-                </table>
             </div>
         </div>
     </div>
 
     <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchMobileTab('lines', this)">
-            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-            <span>DASHBOARD</span>
+        <button class="nav-item active" onclick="switchMobileTab('dashboard', this)">
+            <span class="nav-indicator"></span>
+            <span class="nav-icon">🗒</span>
+            <span class="nav-label">Dashboard</span>
+        </button>
+        <button class="nav-item" onclick="switchMobileTab('total', this)">
+            <span class="nav-indicator"></span>
+            <span class="nav-icon">∑</span>
+            <span class="nav-label">Total</span>
+        </button>
+        <button class="nav-item" onclick="switchMobileTab('grafik', this)">
+            <span class="nav-indicator"></span>
+            <span class="nav-icon">📈</span>
+            <span class="nav-label">Grafik</span>
+        </button>
+    </div>
+
+    <div class="container" id="historyView" style="display:none">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+                <h2 style="margin:0; color:var(--text-main)">Data Logger </h2>
+                <span style="font-size:13px; color:var(--text-muted)">Riwayat data penyimpanan akhir shift</span>
+            </div>
+            <div style="display:flex; gap:10px">
+                <button onclick="exportToExcel()" style="background:#10b981; border:none; color:white; padding:10px 20px; border-radius:8px;">Download Excel</button>
+                <button onclick="showDashboard()">Back</button>
+            </div>
         </div>
-        <div class="nav-item" onclick="switchMobileTab('totals', this)">
-            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M18 4H6v2l6.5 6L6 18v2h12v-3h-7l5-5-5-5h7z"/></svg>
-            <span>TOTALS</span>
-        </div>
-        <div class="nav-item" onclick="switchMobileTab('chart', this)">
-            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-            <span>GRAFIK</span>
+        <div class="table-responsive">
+            <table class="full-table" id="historyTable">
+                <thead>
+                    <tr>
+                        <th style="min-width: 160px; text-align:left;">Waktu</th>
+                        <th style="min-width: 100px;">Total Actual</th>
+                        <th style="min-width: 100px;">Total Teorythical.</th>
+                        <th>L1</th><th>L2</th><th>L3</th><th>L4</th>
+                        <th style="background:var(--bg-card); border-bottom:2px solid var(--warning)">L5</th>
+                        <th style="background:var(--bg-card); border-bottom:2px solid var(--warning)">L6</th>
+                        <th>L7</th><th>L8</th><th>L9</th><th>L10</th><th>L11</th><th>L12</th><th>L14</th><th>L15</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push, get } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+    <div class="container" id="sensorHistoryView" style="display:none">
+        <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+            <h2 id="sensorTitle" style="color:var(--text-main); margin:0;">Line Detail</h2>
+            <button onclick="showDashboard()">Back</button>
+        </div>
+        <div class="table-responsive">
+            <table class="full-table">
+                <thead><tr><th style="text-align:left">Waktu</th><th style="text-align:left">Nilai</th></tr></thead>
+                <tbody id="sensorHistoryTable"></tbody>
+            </table>
+        </div>
+    </div>
 
-        // CONFIG: MQTT (Broker EMQX Public)
-        const mqttConfig = {
-            host: "broker.emqx.io",
-            port: 8084, // WSS Port for EMQX
-            useSSL: true,
-            path: "/mqtt",
-            username: "",
-            password: "",
-            topicBase: "iot/produksi_baru" 
-        };
+    <footer>
+        System: <span id="status" style="color:var(--success)">Connecting...</span> | 
+        Cloud: <span id="firebaseStatus" style="color:var(--primary)">Syncing...</span> | 
+        PASIFIK HARVEST INDONESIA &copy; 2026
+    </footer>
+</div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAcA7CYQqoig7eVaMbopIQpq9EWn1mVudA",
-            authDomain: "iot-phi.firebaseapp.com",
-            databaseURL: "https://iot-phi-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "iot-phi",
-            appId: "1:367236392063:web:7586522c0989d343467657"
-        };
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, push, get } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
-        let latestCounter = {};
-        let globalStartTime = null; 
-        const targetCPM = 70; 
-        const rates = Array(14).fill(targetCPM); 
-        let prodChart = null;
-        let currentChartMode = 'daily'; 
+    const firebaseConfig = {
+        apiKey: "AIzaSyAcA7CYQqoig7eVaMbopIQpq9EWn1mVudA",
+        authDomain: "iot-phi.firebaseapp.com",
+        databaseURL: "https://iot-phi-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "iot-phi",
+        storageBucket: "iot-phi.firebasestorage.app",
+        messagingSenderId: "284686032428",
+        appId: "1:284686032428:web:82bec581d6c9d1a3193b89"
+    };
 
-        // --- NAVIGATION HELPERS ---
-        window.switchMobileTab = (tabName, btnElement) => {
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            if(btnElement) btnElement.classList.add('active');
-            
-            document.getElementById('section-lines').style.display = 'none';
-            document.getElementById('section-totals').style.display = 'none';
-            document.getElementById('section-chart').style.display = 'none';
-            document.getElementById('viewHistory').style.display = 'none'; 
-            document.getElementById('viewDashboard').style.display = 'block';
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
 
-            if(tabName === 'lines') document.getElementById('section-lines').style.display = 'block';
-            if(tabName === 'totals') document.getElementById('section-totals').style.display = 'block';
-            if(tabName === 'chart') document.getElementById('section-chart').style.display = 'block';
+    let latestCounter = {};
+    let globalStartTime = null; 
+    let manualOffset = 0; 
+    let hasAutoSaved = false; 
+    // Array diperbesar ke 16 agar index 15 tersedia
+    const rates = Array(16).fill(70); 
+    let myChart = null;
+    let historyDataCache = [];
+
+    const getVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    /* --- MOBILE SPECIFIC JS --- */
+    window.toggleKebabMenu = () => {
+        const menu = document.getElementById("kebabMenu");
+        const overlay = document.getElementById("mobileOverlay");
+        menu.classList.toggle("show");
+        overlay.classList.toggle("show");
+    };
+
+    window.switchMobileTab = (tabName, btn) => {
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        document.getElementById('dashboardView').setAttribute('data-mobile-tab', tabName);
+        window.scrollTo(0,0);
+        if(tabName === 'grafik' && myChart) {
+            setTimeout(() => { myChart.resize(); }, 100);
         }
+    };
 
-        window.toggleMobileDropdown = () => { document.getElementById('mobileDropdown').classList.toggle('active'); }
-        window.syncSelect = (val) => {
-            document.getElementById('machineSelectDesktop').value = val;
-            document.getElementById('machineSelectMobile').value = val;
+    window.toggleTheme = () => {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        
+        if(myChart) {
+            myChart.options.scales.x.ticks.color = getVar('--text-muted');
+            myChart.options.scales.y.ticks.color = getVar('--text-muted');
+            myChart.options.scales.y.grid.color = getVar('--border-color');
+            myChart.update();
         }
+    };
 
-        // --- LOGIN LOGIC ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const userField = document.getElementById("username");
-            const passField = document.getElementById("password");
-            if(userField) userField.focus();
-            if(userField) userField.addEventListener("keydown", function(event) { if(event.key === "Enter") { event.preventDefault(); passField.focus(); } });
-            if(passField) passField.addEventListener("keydown", function(event) { if(event.key === "Enter") { event.preventDefault(); doLogin(); } });
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    function syncConfig() {
+        onValue(ref(database, 'config/productionStartTime'), (snap) => {
+            const val = snap.val();
+            if (val) { globalStartTime = val; updateUI(); } 
+            else { set(ref(database, 'config/productionStartTime'), Date.now()); }
+        });
+        onValue(ref(database, 'config/manualOffset'), (snap) => {
+            manualOffset = snap.val() || 0;
+            updateUI();
+        });
+    }
+
+    window.doLogin = () => {
+        const u = document.getElementById("username").value;
+        const p = document.getElementById("password").value;
+        if(u === "admin" && p === "admin123") {
+            sessionStorage.setItem("login", "1"); location.reload();
+        } else { document.getElementById("error").innerText = "Username atau Password salah!"; }
+    };
+    window.logout = () => { sessionStorage.clear(); location.reload(); };
+
+    window.onload = () => {
+        if(sessionStorage.getItem("login") === "1") {
+            document.getElementById("loginPage").style.display = "none";
+            document.getElementById("dashboardPage").style.display = "block";
+            generateAllCards(); syncConfig(); loadLastCacheFromFirebase(); fetchHistoryForChart();
+            setInterval(checkAutoSchedule, 10000); setInterval(updateUI, 1000);
+        }
+    };
+
+    window.exportToExcel = () => {
+        if (historyDataCache.length === 0) return alert("Tidak ada data history.");
+        let csv = "\uFEFFWaktu;Total Actual;Total Teorythical";
+        // Loop sampai 15, lewati 13
+        for (let i = 1; i <= 15; i++) {
+            if(i === 13) continue;
+            csv += `;Line ${i}`;
+        }
+        csv += "\n";
+        [...historyDataCache].reverse().forEach(item => {
+            let row = `"${item.time.replace(/,/g, '')}";${item.total||0};${item.totalTeorythical||0}`;
+            // Loop sampai 15, lewati 13
+            for (let i = 1; i <= 15; i++) {
+                if(i === 13) continue;
+                row += `;${item.counter ? (item.counter[`L${i}`]||0) : 0}`;
+            }
+            csv += row + "\n";
+        });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+        link.download = `SardinesPHI_History_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+    };
+
+    window.updateChartPeriod = (period, btn) => {
+        document.querySelectorAll('.btn-chart').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        processAndRenderChart(period);
+    };
+
+    async function fetchHistoryForChart() {
+        const snap = await get(ref(database, 'history'));
+        if(snap.exists()) { historyDataCache = Object.values(snap.val()); processAndRenderChart('daily'); }
+    }
+
+    function processAndRenderChart(period) {
+        if(historyDataCache.length === 0) return;
+        const grouped = {};
+        const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+        
+        historyDataCache.forEach(entry => {
+            let d = entry.timestamp ? new Date(entry.timestamp) : new Date();
+            let key;
+            if (period === 'daily') key = d.toLocaleDateString('id-ID', {day:'numeric', month:'short'});
+            else if (period === 'weekly') {
+                const start = new Date(d.getFullYear(), d.getMonth(), 1);
+                const week = Math.ceil((d.getDate() + start.getDay()) / 7);
+                key = `W${week} (${months[d.getMonth()]})`;
+            } else key = `${months[d.getMonth()]} ${d.getFullYear()}`;
+
+            if(!grouped[key]) grouped[key] = { act: 0, teorythical: 0 };
+            grouped[key].act += (entry.total || 0);
+            grouped[key].teorythical += (entry.totalTeorythical !== undefined ? entry.totalTeorythical : 470000);
         });
 
-        window.adjustTime = (id, step, max) => {
-            const el = document.getElementById(id);
-            let val = parseInt(el.value);
-            val += step;
-            if (val > max) val = 0;
-            if (val < 0) val = max;
-            el.value = val.toString().padStart(2, '0');
-        };
+        const lbls = Object.keys(grouped);
+        const acts = lbls.map(k => grouped[k].act);
+        const teorythicals = lbls.map(k => grouped[k].teorythical);
+        renderChart(lbls, acts, teorythicals);
+    }
 
-        window.doLogin = () => {
-            const u = document.getElementById("username").value;
-            const p = document.getElementById("password").value;
-            if(u === "admin" && p === "admin123") {
-                sessionStorage.setItem("login", "1");
-                location.reload();
-            } else {
-                document.getElementById("error").innerText = "Invalid Credentials";
+    function renderChart(labels, actuals, teorythicals) {
+        const ctx = document.getElementById('productionChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        
+        myChart = new Chart(ctx, {
+            data: {
+                labels: labels,
+                datasets: [
+                    { type: 'line', label: 'Target', data: teorythicals, borderColor: getVar('--warning'), backgroundColor: getVar('--warning'), borderWidth: 2, borderDash: [6, 4], pointRadius: 0, tension: 0.3, order: 1 },
+                    { type: 'bar', label: 'Actual', data: actuals, backgroundColor: ctx => {
+                        const i = ctx.dataIndex; return actuals[i] >= teorythicals[i] ? getVar('--success') : getVar('--danger');
+                    }, borderRadius: 6, order: 2, barPercentage: 0.6 }
+                ]
+            },
+            options: {
+                responsive: true, 
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grace: '5%', 
+                        grid: { color: getVar('--border-color'), borderDash: [4, 4] }, 
+                        ticks: { 
+                            stepSize: 1000, 
+                            color: getVar('--text-muted'), 
+                            callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v 
+                        } 
+                    },
+                    x: { grid: { display: false }, ticks: { color: getVar('--text-muted') } }
+                },
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: getVar('--bg-header'), titleColor: getVar('--text-main'), bodyColor: getVar('--text-main'), borderColor: getVar('--border-color'), borderWidth: 1 } }
             }
-        };
-        window.logout = () => { sessionStorage.clear(); location.reload(); };
+        });
+    }
 
-        window.onload = () => {
-            if(document.getElementById("loginPage") && document.getElementById("loginPage").style.display !== "none") {
-                if(document.getElementById("username")) document.getElementById("username").focus();
-            }
-            if(sessionStorage.getItem("login") === "1") {
-                document.getElementById("loginPage").style.display = "none";
-                document.getElementById("dashboardPage").style.display = "block";
-                generateCards();
-                initChart(); 
-                syncGlobalStartTime();
-                loadCache();
-                connectMQTT();
-                setInterval(updateClock, 1000);
-                setInterval(updateUI, 1000);
-            }
-        };
+    const client = mqtt.connect("wss://c836c913dd894d7db71ce06137b51f4e.s1.eu.hivemq.cloud:8884/mqtt", { username: "adminphi123", password: "Phi12345", reconnectPeriod: 2000 });
+    client.on("connect", () => { document.getElementById("status").innerText = "Connected"; for(let i=1; i<=6; i++) client.subscribe(`iot/esp32/machine0${i}/counter`); });
+    client.on("message", (t, m) => {
+        try {
+            const d = JSON.parse(m.toString());
+            const mach = t.split('/')[2];
+            if(Object.values(d.counter).every(v=>v===0) && d.reset_source!=="web") {}
+            Object.assign(latestCounter, d.counter);
+            set(ref(database, `lastCache/${mach}`), d);
+            document.getElementById("firebaseStatus").innerText = "Synced";
+            updateUI();
+        } catch(e) { console.error(e); }
+    });
 
-        function updateClock() {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('id-ID', {hour12: false});
-            if(document.getElementById("clock")) document.getElementById("clock").innerText = timeStr;
-            if(document.getElementById("mobileClock")) document.getElementById("mobileClock").innerText = timeStr; 
+    function generateAllCards() {
+        const c1 = document.getElementById("clubCanContainer"); const c2 = document.getElementById("roundCanContainer");
+        c1.innerHTML = ""; c2.innerHTML = "";
+        // Loop sampai 15, lewati 13
+        for(let i=1; i<=15; i++) {
+            if(i === 13) continue;
+
+            const isP = (i===5||i===6);
+            const style = isP ? "color:var(--warning)" : "color:var(--primary)";
+            const html = `
+            <div class="card" onclick="showSensorHistory(${i})" style="${isP?'border-left:4px solid var(--warning)':'border-left:4px solid var(--primary)'}">
+                <div class="card-header">
+                    <h3 class="card-title">LINE ${i.toString().padStart(2,'0')}</h3>
+                    <span class="rate-badge">${rates[i-1]}cpm</span>
+                </div>
+                <table>
+                    <tr><th>ACTUAL</th><th>TEORYTHICAL.</th><th>EFF.</th></tr>
+                    <tr><td class="val-actual" id="L${i}">0</td><td id="P${i}" style="${style}">0</td><td id="E${i}">0%</td></tr>
+                </table>
+            </div>`;
+            if(isP) c2.innerHTML+=html; else c1.innerHTML+=html;
+        }
+    }
+
+    function updateUI() {
+        if(!globalStartTime) return;
+        const mins = Math.max(0, Date.now() - globalStartTime) / 60000;
+        let gTot=0, cAct=0, cTeorythical=0, pAct=0, rTeorythical=0;
+
+        // Loop sampai 15, lewati 13
+        for(let i=1; i<=15; i++) {
+            if(i === 13) continue;
+
+            const act = latestCounter[`L${i}`] || 0;
+            const teorythical = Math.floor(rates[i-1] * mins);
+            const eff = teorythical>0 ? ((act/teorythical)*100).toFixed(1)+'%' : '0%';
+            const isP = (i===5||i===6);
+            if(isP) { pAct+=act; rTeorythical+=teorythical; } else { cAct+=act; cTeorythical+=teorythical; }
             
-            const setH = parseInt(document.getElementById("setHour").value);
-            const setM = parseInt(document.getElementById("setMin").value);
-            if (now.getHours() === setH && now.getMinutes() === setM && now.getSeconds() === 0) {
-                saveAndReset("ALL"); 
+            const el = document.getElementById(`L${i}`);
+            if(el) {
+                el.innerText = act; document.getElementById(`P${i}`).innerText = teorythical; 
+                const eEl = document.getElementById(`E${i}`); eEl.innerText = eff;
+                eEl.style.color = parseFloat(eff)>=90 ? getVar('--success') : parseFloat(eff)>=70 ? getVar('--warning') : getVar('--danger');
+            }
+            gTot+=act;
+        }
+        const final = gTot + manualOffset;
+        document.getElementById("total").innerText = final.toLocaleString();
+        document.getElementById("clock").innerText = new Date().toLocaleString('id-ID');
+        updSum("totalClub", cAct, cTeorythical); 
+        updSum("totalRound", pAct, rTeorythical); 
+        updSum("grandTotal", final, cTeorythical+rTeorythical);
+    }
+
+    function updSum(id, act, teorythical) {
+        // Fix: Removed potential issue where element ID mismatch caused crash
+        const elAct = document.getElementById(`${id}Actual`);
+        if(elAct) elAct.innerText = act.toLocaleString();
+        
+        const elTeo = document.getElementById(`${id}Teorythical`);
+        if(elTeo) elTeo.innerText = teorythical.toLocaleString();
+        
+        const eff = teorythical>0 ? ((act/teorythical)*100).toFixed(1)+'%' : '0%';
+        const el = document.getElementById(`${id}Eff`); 
+        if(el) {
+            el.innerText = eff;
+            el.style.color = parseFloat(eff)>=90 ? getVar('--success') : parseFloat(eff)>=70 ? getVar('--warning') : getVar('--danger');
+        }
+    }
+
+    window.resetCounter = async () => {
+        const val = document.getElementById("machineSelect").value;
+        const [mach, line] = val.split("|");
+        if(confirm(`Reset ${line}? Total hari ini tidak akan berkurang.`)) {
+            const curr = latestCounter[line] || 0;
+            await set(ref(database, 'config/manualOffset'), manualOffset + curr);
+            client.publish(`iot/esp32/${mach}/cmd`, JSON.stringify({cmd:"RESET", reset_source:"web"}));
+        }
+    };
+
+    function checkAutoSchedule() {
+        const d = new Date();
+        if(d.getHours()===17 && d.getMinutes()===5) { if(!hasAutoSaved){ executeSaveAndReset(); hasAutoSaved=true; } }
+        else if(d.getMinutes()!==5) hasAutoSaved=false;
+    }
+
+    async function executeSaveAndReset() {
+        let act = manualOffset, teorythical = 0;
+        if(globalStartTime) {
+            const mins = Math.max(0, Date.now() - globalStartTime) / 60000;
+            // Loop sampai 15, lewati 13
+            for(let i=1; i<=15; i++) { 
+                if(i===13) continue;
+                act += (latestCounter[`L${i}`]||0); 
+                teorythical += Math.floor(rates[i-1]*mins); 
             }
         }
-
-        function syncGlobalStartTime() {
-            const startRef = ref(database, 'config/productionStartTime');
-            onValue(startRef, (snap) => {
-                if(snap.val()) globalStartTime = snap.val();
-                else {
-                    const now = Date.now();
-                    set(startRef, now);
-                    globalStartTime = now;
-                }
-            });
-        }
-
-        function updateUI() {
-            if (!globalStartTime) return;
-            let sumClubAct = 0, sumClubPred = 0;
-            let sumPouchAct = 0, sumPouchPred = 0;
-            const now = Date.now();
-            const minutesElapsed = (now - globalStartTime) / 60000;
-
-            for (let i = 1; i <= 14; i++) {
-                const actual = latestCounter[`L${i}`] || 0;
-                const prediction = Math.max(0, Math.round(rates[i-1] * minutesElapsed));
-                let eff = prediction > 0 ? ((actual / prediction) * 100).toFixed(0) : 0;
-                if(eff > 100) eff = 100;
-
-                const elActual = document.getElementById(`L${i}`);
-                if (elActual) {
-                    elActual.innerText = actual;
-                    document.getElementById(`P${i}`).innerText = prediction;
-                    document.getElementById(`E${i}`).innerText = eff + '%';
-                }
-
-                if(i === 5 || i === 6) {
-                    sumPouchAct += actual;
-                    sumPouchPred += prediction;
-                } else {
-                    sumClubAct += actual;
-                    sumClubPred += prediction;
-                }
-            }
-            document.getElementById("clubActual").innerText = sumClubAct.toLocaleString();
-            document.getElementById("clubPredict").innerText = sumClubPred.toLocaleString();
-            let clubEff = sumClubPred > 0 ? ((sumClubAct / sumClubPred) * 100).toFixed(0) : 0;
-            if(clubEff > 100) clubEff = 100;
-            document.getElementById("clubEff").innerText = clubEff + "%";
-
-            document.getElementById("pouchActual").innerText = sumPouchAct.toLocaleString();
-            document.getElementById("pouchPredict").innerText = sumPouchPred.toLocaleString();
-            let pouchEff = sumPouchPred > 0 ? ((sumPouchAct / sumPouchPred) * 100).toFixed(0) : 0;
-            if(pouchEff > 100) pouchEff = 100;
-            document.getElementById("pouchEff").innerText = pouchEff + "%";
-            
-            const grandTotal = sumClubAct + sumPouchAct;
-            document.getElementById("grandTotal").innerText = grandTotal.toLocaleString();
-            if(prodChart && currentChartMode === 'daily') updateRealtimeChart(grandTotal);
-        }
-
-        function connectMQTT() {
-            const client = mqtt.connect(`wss://${mqttConfig.host}:${mqttConfig.port}${mqttConfig.path}`, {
-                username: mqttConfig.username,
-                password: mqttConfig.password,
-                clientId: 'web_dashboard_' + Math.random().toString(16).substr(2, 8)
-            });
-
-            client.on("connect", () => { 
-                window.mqttClient = client; 
-                for(let i=1; i<=7; i++) client.subscribe(`${mqttConfig.topicBase}/machine0${i}/counter`);
-            });
-
-            client.on("message", (topic, msg) => {
-                try {
-                    const data = JSON.parse(msg.toString());
-                    const machine = topic.split('/')[2];
-                    if(Object.values(data.counter).every(v => v === 0) && data.reset_source !== "web") return;
-                    Object.assign(latestCounter, data.counter);
-                    set(ref(database, `lastCache/${machine}`), data);
-                } catch(e){}
-            });
-        }
-
-        function generateCards() {
-            const c = document.getElementById("cardsContainer");
-            c.innerHTML = "";
-            for(let i=1; i<=14; i++) {
-                let badgeClass = (i === 5 || i === 6) ? "badge-pouch" : "badge-club";
-                let typeName = (i === 5 || i === 6) ? "ROUNDCAN" : "CLUBCAN";
-                
-                c.innerHTML += `
-                <div class="card">
-                    <div class="card-header">
-                        <div><span class="card-title">LINE ${i.toString().padStart(2,'0')}</span><span class="badge ${badgeClass}">${typeName}</span></div>
-                        <span class="card-speed">70 CPM</span>
-                    </div>
-                    <table class="mini-table">
-                        <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-                        <tr><th>Actual</th><th style="text-align:center">THEORITICAL</th><th style="text-align:right">Eff %</th></tr>
-                        <tr><td class="data-val" id="L${i}">0</td><td class="data-val" style="text-align:center" id="P${i}">0</td><td class="data-val" style="text-align:right" id="E${i}">0%</td></tr>
-                    </table>
-                </div>`;
-            }
-        }
-
-        async function saveAndReset(targetMachine) {
-            const totalC = document.getElementById("clubActual").innerText;
-            const totalP = document.getElementById("pouchActual").innerText;
-            const grand = document.getElementById("grandTotal").innerText;
-
-            await push(ref(database, 'history'), {
-                time: new Date().toLocaleString(),
-                grandTotal: grand,
-                detail: { club: totalC, pouch: totalP },
-                counter: {...latestCounter}, 
-                resetType: targetMachine
-            });
+        try {
+            await push(ref(database, 'history'), { time: new Date().toLocaleString('id-ID'), timestamp: Date.now(), total: act, totalTeorythical: teorythical, counter: {...latestCounter} });
+            for(let i=1; i<=6; i++) client.publish(`iot/esp32/machine0${i}/cmd`, JSON.stringify({cmd:"RESET", reset_source:"web"}));
             await set(ref(database, 'config/productionStartTime'), Date.now());
-            if(prodChart) { prodChart.data.labels=[]; prodChart.data.datasets[0].data=[]; prodChart.update(); }
+            await set(ref(database, 'config/manualOffset'), 0);
+            latestCounter={}; fetchHistoryForChart(); updateUI();
+        } catch(e) { console.error(e); }
+    }
+    window.manualSave = () => { if(confirm("Simpan & Reset Total (Akhir Shift)?")) executeSaveAndReset(); };
 
-            if(window.mqttClient && window.mqttClient.connected) {
-                if(targetMachine === "ALL") {
-                    for(let i=1; i<=7; i++) {
-                        window.mqttClient.publish(`${mqttConfig.topicBase}/machine0${i}/cmd`, JSON.stringify({ cmd: "RESET", reset_source: "web" }));
-                    }
-                } else {
-                    window.mqttClient.publish(`${mqttConfig.topicBase}/${targetMachine}/cmd`, JSON.stringify({ cmd: "RESET", reset_source: "web" }));
+    window.showDashboard = () => { document.getElementById("dashboardView").style.display="block"; document.getElementById("historyView").style.display="none"; document.getElementById("sensorHistoryView").style.display="none"; };
+    
+    window.showHistory = async () => {
+        document.getElementById("dashboardView").style.display="none"; document.getElementById("historyView").style.display="block";
+        const snap = await get(ref(database, 'history'));
+        const tbody = document.getElementById("historyBody"); tbody.innerHTML="";
+        if(snap.exists()) {
+            historyDataCache = Object.values(snap.val());
+            [...historyDataCache].reverse().forEach(h => {
+                let row = `<tr><td style="text-align:left; font-weight:600">${h.time}</td><td style="font-weight:700; color:var(--text-main)">${h.total?.toLocaleString()||0}</td><td style="color:var(--text-muted)">${h.totalTeorythical?.toLocaleString()||'-'}</td>`;
+                // Loop sampai 15, lewati 13
+                for(let i=1; i<=15; i++) {
+                    if(i===13) continue;
+                    let v = h.counter?h.counter[`L${i}`]||0:0;
+                    row+=`<td class="${v>0?'val-active':'val-zero'}" style="${(i===5||i===6)?'background:rgba(245, 158, 11, 0.1)':''}">${v}</td>`;
                 }
-            } else {
-                alert("MQTT Disconnected. Reset command sent locally only.");
-            }
-
-            for (let i = 1; i <= 14; i++) { latestCounter[`L${i}`] = 0; }
-            updateUI(); 
-        }
-
-        window.manualSave = async (isAuto = false) => {
-            if(isAuto || confirm("Simpan Data ke History?")) {
-                const totalC = document.getElementById("clubActual").innerText;
-                const totalP = document.getElementById("pouchActual").innerText;
-                const grand = document.getElementById("grandTotal").innerText;
-                await push(ref(database, 'history'), {
-                    time: new Date().toLocaleString(),
-                    grandTotal: grand,
-                    detail: { club: totalC, pouch: totalP },
-                    counter: {...latestCounter},
-                    type: "Manual Save"
-                });
-                if(!isAuto) alert("Data berhasil disimpan ke History!");
-            }
-        };
-
-        window.resetCounter = async () => {
-            let m = document.getElementById("machineSelectDesktop").value;
-            if(window.innerWidth <= 768) { m = document.getElementById("machineSelectMobile").value; }
-            if(!m) return alert("Pilih Mesin atau Reset All dulu!");
-            
-            let confirmMsg = (m === 'all') ? "RESET SEMUA MESIN? Data akan disimpan otomatis." : `RESET ${m.toUpperCase()}? Data akan disimpan otomatis.`;
-            if(confirm(confirmMsg)) {
-                let target = (m === 'all') ? "ALL" : m;
-                await saveAndReset(target);
-                alert("Perintah Reset dikirim & Data disimpan.");
-            }
-        };
-
-        async function loadCache() {
-            const snap = await get(ref(database, 'lastCache'));
-            if(snap.exists()) {
-                const d = snap.val();
-                Object.keys(d).forEach(k => { if(d[k].counter) Object.assign(latestCounter, d[k].counter); });
-            }
-        }
-
-        window.initChart = () => {
-            const ctx = document.getElementById('productionChart').getContext('2d');
-            const gradient = ctx.createLinearGradient(0,0,0,300);
-            gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)'); 
-            gradient.addColorStop(1, 'rgba(56, 189, 248, 0)');
-
-            prodChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: [], datasets: [{ label: 'Grand Total', data: [], borderColor: '#38bdf8', backgroundColor: gradient, fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 }] },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: {display:false} },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8', font: { family: "'JetBrains Mono', monospace" }, callback: function(val) { return val >= 1000 ? (val/1000) + 'k' : val; } } },
-                        x: { grid: {display:false}, ticks: { color: '#94a3b8', font: { family: "'JetBrains Mono', monospace" }, maxTicksLimit: 6, maxRotation: 0, autoSkip: true } }
-                    }
-                }
+                tbody.innerHTML += row + "</tr>";
             });
-        };
-
-        function updateRealtimeChart(val) {
-            if (currentChartMode !== 'daily') return;
-            const now = new Date();
-            const time = now.getHours() + ":" + (now.getMinutes()<10?'0':'')+now.getMinutes();
-            if(prodChart.data.labels.length === 0 || prodChart.data.labels[prodChart.data.labels.length-1] !== time) {
-                prodChart.data.labels.push(time);
-                prodChart.data.datasets[0].data.push(val);
-                if(prodChart.data.labels.length > 720) { prodChart.data.labels.shift(); prodChart.data.datasets[0].data.shift(); }
-                prodChart.update();
-            } else {
-                prodChart.data.datasets[0].data[prodChart.data.datasets[0].data.length-1] = val;
-                prodChart.update('none');
-            }
         }
+    };
 
-        window.setChartPeriod = (period, btn) => {
-            document.querySelectorAll('.chart-filters button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentChartMode = period;
-            prodChart.data.labels = [];
-            prodChart.data.datasets[0].data = [];
-            if(period === 'daily') {} 
-            else if(period === 'weekly') { prodChart.data.labels = ['MON','TUE','WED','THU','FRI','SAT','SUN']; prodChart.data.datasets[0].data = [15000, 18000, 16000, 20000, 22000, 15000, 5000]; } 
-            else if (period === 'monthly') { prodChart.data.labels = ['WEEK 1','WEEK 2','WEEK 3','WEEK 4']; prodChart.data.datasets[0].data = [100000, 120000, 110000, 130000]; }
-            prodChart.update();
-        }
+    window.showSensorHistory = async (id) => {
+        document.getElementById("dashboardView").style.display="none"; document.getElementById("sensorHistoryView").style.display="block";
+        document.getElementById("sensorTitle").innerText = `LINE ${id} DETAIL`;
+        const snap = await get(ref(database, 'history'));
+        const t = document.getElementById("sensorHistoryTable"); t.innerHTML="";
+        if(snap.exists()) Object.values(snap.val()).reverse().forEach(h => {
+            const v = h.counter ? h.counter[`L${id}`]||0 : 0;
+            t.innerHTML+=`<tr><td style="text-align:left">${h.time}</td><td style="text-align:left; color:${v>0?getVar('--success'):getVar('--text-muted')}">${v}</td></tr>`;
+        });
+    };
 
-        window.switchView = (v) => {
-            if(v === 'history') {
-                loadHistoryTable();
-                document.getElementById('viewDashboard').style.display = 'none';
-                document.getElementById('viewHistory').style.display = 'block';
-                if(window.innerWidth <= 768) {
-                    document.getElementById('section-lines').style.display = 'none';
-                    document.getElementById('section-totals').style.display = 'none';
-                    document.getElementById('section-chart').style.display = 'none';
-                    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-                }
-            } else {
-                document.getElementById('viewHistory').style.display = 'none';
-                document.getElementById('viewDashboard').style.display = 'block';
-                if(window.innerWidth <= 768) {
-                   switchMobileTab('lines', document.querySelector('.nav-item'));
-                }
-            }
-        };
-
-        async function loadHistoryTable() {
-            const b = document.getElementById("historyTableBody");
-            b.innerHTML = "<tr><td colspan='3'>Loading data...</td></tr>";
-            const snap = await get(ref(database, 'history'));
-            b.innerHTML = "";
-            if(snap.exists()) {
-                Object.values(snap.val()).reverse().forEach(h => {
-                
-                    let clubInfo = h.detail ? `<span style='color:var(--primary)'>Club: ${h.detail.club}</span> | <span style='color:var(--purple)'>Round: ${h.detail.pouch}</span>` : '-';
-                    let totalShow = h.grandTotal ? h.grandTotal : h.total;
-                    b.innerHTML += `<tr>
-                        <td style="padding:15px; font-family:'JetBrains Mono'; border-bottom:1px solid #334155;">${h.time}</td>
-                        <td style="padding:15px; color:var(--success); font-weight:bold; font-family:'JetBrains Mono'; border-bottom:1px solid #334155; text-align:center;">${totalShow}</td>
-                        <td style="padding:15px; font-size:0.85rem; border-bottom:1px solid #334155;">${clubInfo}</td>
-                    </tr>`;
-                });
-            }
-        }
-    </script>
+    async function loadLastCacheFromFirebase() {
+        const snap = await get(ref(database, 'lastCache'));
+        if(snap.exists()) { Object.keys(snap.val()).forEach(m => { if(snap.val()[m].counter) Object.assign(latestCounter, snap.val()[m].counter); }); updateUI(); }
+    }
+</script>
 </body>
 </html>
